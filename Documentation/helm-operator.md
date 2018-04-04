@@ -98,7 +98,7 @@ The following tables lists the configurable parameters of the rook-operator char
 | `agent.toleration`        | Toleration for the agent pods | <none> |
 | `agent.tolerationKey`     | The specific key of the taint to tolerate | <none> |
 | `mon.healthCheckInterval` | The frequency for the operator to check the mon health | `45s` |
-| `mon.monOutTimeout`       | The time to wait before failing over an unhealthy mon | `300s` |
+| `mon.monOutTimeout`       | The time to wait before failing over an unhealthy mon | `600s` |
 
 
 ### Command Line

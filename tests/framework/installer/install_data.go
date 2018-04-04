@@ -163,7 +163,7 @@ spec:
         # The duration to wait before trying to failover or remove/replace the
         # current mon with a new mon (useful for compensating flapping network).
         - name: ROOK_MON_OUT_TIMEOUT
-          value: "300s"
+          value: "600s"
         - name: NODE_NAME
           valueFrom:
             fieldRef:
