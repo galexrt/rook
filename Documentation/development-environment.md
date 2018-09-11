@@ -1,10 +1,12 @@
 ---
 title: Multi-Node Test Environment
-weight: 91
+weight: 92
 indent: true
 ---
 
 # Multi-Node Test Environment
+
+For multi-node testing the [k8s-vagrant-multi-node.sh script](/tests/README.md#k8s-vagrant-multi-node-recommended-for-multi-node-testing) can also be used, as it is working on Linux and Mac machines.
 
 ## Setup expectation
 
