@@ -76,7 +76,8 @@ func UpdateNodeStatus(kv *k8sutil.ConfigMapKVStore, node string, status Orchestr
 		k8sutil.TruncateNodeName(orchestrationStatusMapName, node),
 		orchestrationStatusKey,
 		string(s),
-		labels); err != nil {
+		labels,
+	); err != nil {
 		return fmt.Errorf("failed to set node %s status. %+v", node, err)
 	}
 	return nil
