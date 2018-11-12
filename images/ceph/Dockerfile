@@ -14,11 +14,6 @@
 
 FROM BASEIMAGE
 
-RUN yum --assumeyes install \
-        net-tools \
-        nmap-ncat && \
-    yum clean all && rm -rf /tmp/* /var/tmp/*
-
 ARG ARCH
 ARG TINI_VERSION
 
