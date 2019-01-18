@@ -1,10 +1,7 @@
 ---
 title: RBAC Security
 weight: 14
-indent: true
 ---
-
-# RBAC Security
 
 ## Cluster Role
 
@@ -99,8 +96,6 @@ kind: Namespace
 metadata:
   name: rook-ceph-system
 ---
-# Allow the rook-ceph-system serviceAccount to use the privileged PSP
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: rook-ceph-system-psp
@@ -125,8 +120,6 @@ kind: Namespace
 metadata:
   name: rook-ceph
 ---
-# Allow the default serviceAccount to use the privileged PSP
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: rook-default-psp
@@ -140,8 +133,6 @@ subjects:
   name: default
   namespace: rook-ceph
 ---
-# Allow the rook-ceph-osd serviceAccount to use the privileged PSP
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: rook-ceph-osd-psp

@@ -1,10 +1,7 @@
 ---
 title: Container Linux
 weight: 115
-indent: true
 ---
-# Using the Container Linux Update Operator with Rook
-
 When you are using Container Linux (CoreOS) and have the update engine enabled, it could be that a node reboots quickly after another not leaving enough time for the Rook cluster to rebuild. The [Container Linux Update Operator](https://github.com/coreos/container-linux-update-operator) is the solution for this, you can block your nodes to reboot until the Ceph cluster is healthy.
 
 ## Prerequisites

@@ -1,10 +1,7 @@
 ---
 title: Custom Resources
 weight: 9
-indent: true
 ---
-
-# Custom Resources (CRDs)
 
 Rook allows you to create and manage your storage cluster through custom resource definitions (CRDs). Each type of resource
 has its own CRD defined.

@@ -1,10 +1,7 @@
 ---
 title: Multi-Node Test Environment
 weight: 121
-indent: true
 ---
-
-# Multi-Node Test Environment
 
 ## Setup expectation
 

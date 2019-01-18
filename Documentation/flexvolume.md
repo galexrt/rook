@@ -1,10 +1,7 @@
 ---
 title: FlexVolume Configuration
 weight: 12
-indent: true
 ---
-# FlexVolume Configuration
-Rook uses [FlexVolume](https://github.com/kubernetes/community/blob/master/contributors/devel/flexvolume.md) to integrate with Kubernetes for performing storage operations. In some operating systems where Kubernetes is deployed, the [default Flexvolume plugin directory](https://github.com/kubernetes/community/blob/master/contributors/devel/flexvolume.md#prerequisites) (the directory where FlexVolume drivers are installed) is **read-only**.
 This is the case for Kubernetes deployments on:
 
 * [Atomic](https://www.projectatomic.io/)
