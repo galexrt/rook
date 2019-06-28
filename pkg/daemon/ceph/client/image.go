@@ -29,9 +29,11 @@ import (
 )
 
 const (
+	// ImageMinSize minimum size for an image
 	ImageMinSize = uint64(1048576) // 1 MB
 )
 
+// CephBlockImage JSON structure of a rbd ls / rbd info output.
 type CephBlockImage struct {
 	Name     string `json:"image"`
 	Size     uint64 `json:"size"`
@@ -39,6 +41,7 @@ type CephBlockImage struct {
 	InfoName string `json:"name"`
 }
 
+// ListImages list the images in a storage pool.
 func ListImages(context *clusterd.Context, clusterName, poolName string) ([]CephBlockImage, error) {
 	args := []string{"ls", "-l", poolName}
 	cmd := NewRBDCommand(context, clusterName, args)
@@ -64,6 +67,35 @@ func ListImages(context *clusterd.Context, clusterName, poolName string) ([]Ceph
 	}
 
 	return images, nil
+}
+
+// GetImage get a single image in a storage pool.
+func GetImage(context *clusterd.Context, clusterName, poolName, volumeName string) (*CephBlockImage, error) {
+	args := []string{"info", "-p", poolName, volumeName}
+	cmd := NewRBDCommand(context, clusterName, args)
+	cmd.JsonOutput = true
+	buf, err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get image %s for pool %s: %+v", volumeName, poolName, err)
+	}
+
+	var image CephBlockImage
+
+	//The regex expression captures the json result at the end buf
+	//When logLevel is DEBUG buf contains log statements of librados (see tests for examples)
+	//It can happen that the end of the "real" output doesn't not contain a new line
+	//that's why looking for the end isn't an option here (anymore?)
+	res := regexp.MustCompile(`(?m)^(\{.*\})`).FindStringSubmatch(string(buf))
+	if len(res) == 0 {
+		return &image, nil
+	}
+	buf = []byte(res[0])
+
+	if err = json.Unmarshal(buf, &image); err != nil {
+		return nil, fmt.Errorf("unmarshal failed: %+v. raw buffer response: %s", err, string(buf))
+	}
+
+	return &image, nil
 }
 
 // CreateImage creates a block storage image.
@@ -103,6 +135,7 @@ func CreateImage(context *clusterd.Context, clusterName, name, poolName, dataPoo
 	return &CephBlockImage{Name: name, Size: size}, nil
 }
 
+// DeleteImage delete an RBD image
 func DeleteImage(context *clusterd.Context, clusterName, name, poolName string) error {
 	imageSpec := getImageSpec(name, poolName)
 	args := []string{"rm", imageSpec}

@@ -30,11 +30,41 @@ const (
 	sizeMB = 1048576 // 1 MB
 )
 
+func TestGetImage(t *testing.T) {
+	executor := &exectest.MockExecutor{}
+	context := &clusterd.Context{Executor: executor}
+
+	// mock an error during the rbd info image call. rbd tool returns error information to the output stream,
+	// separate from the error object, so verify that information also makes it back to us (because it is useful).
+	executor.MockExecuteCommandWithOutput = func(debug bool, actionName string, command string, args ...string) (string, error) {
+		switch {
+		case command == "rbd" && args[0] == "info":
+			return "mocked detailed ceph error output stream", fmt.Errorf("some mocked error")
+		}
+		return "", fmt.Errorf("unexpected ceph command '%v'", args)
+	}
+	_, err := GetImage(context, "foocluster", "pool1", "image1")
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "some mocked error"))
+
+	executor.MockExecuteCommandWithOutput = func(debug bool, actionName string, command string, args ...string) (string, error) {
+		switch {
+		case command == "rbd" && args[0] == "info":
+			return `{"name":"` + args[3] + `","id":"b9546c8b3561","size":107374182400,"objects":25600,"order":22,"object_size":4194304,"block_name_prefix":"rbd_data.b9546c8b3561","format":2,"features":["layering"],"op_features":[],"flags":[],"create_timestamp":"Sat Mar 30 11:06:04 2019"}`, nil
+		}
+		return "", fmt.Errorf("unexpected ceph command '%v'", args)
+	}
+
+	image, err := GetImage(context, "foocluster", "pool1", "image1")
+	assert.Nil(t, err)
+	assert.Equal(t, "image1", image.InfoName)
+}
+
 func TestCreateImage(t *testing.T) {
 	executor := &exectest.MockExecutor{}
 	context := &clusterd.Context{Executor: executor}
 
-	// mock an error during the create image call.  rbd tool returns error information to the output stream,
+	// mock an error during the create image call. rbd tool returns error information to the output stream,
 	// separate from the error object, so verify that information also makes it back to us (because it is useful).
 	executor.MockExecuteCommandWithOutput = func(debug bool, actionName string, command string, args ...string) (string, error) {
 		switch {

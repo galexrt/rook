@@ -20,12 +20,14 @@ package provisioner
 import (
 	"fmt"
 	"strings"
+	"syscall"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/rook/rook/pkg/clusterd"
 	"github.com/rook/rook/pkg/daemon/ceph/agent/flexvolume"
 	ceph "github.com/rook/rook/pkg/daemon/ceph/client"
 	"github.com/rook/rook/pkg/operator/ceph/cluster"
+	"github.com/rook/rook/pkg/util/exec"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -180,8 +182,16 @@ func (p *RookVolumeProvisioner) Delete(volume *v1.PersistentVolume) error {
 	if clusterns == "" {
 		return fmt.Errorf("Failed to delete rook block image %s/%s: no clusterNamespace or (deprecated) clusterName option given", pool, volume.Name)
 	}
-	err := ceph.DeleteImage(p.context, clusterns, name, pool)
-	if err != nil {
+
+	_, err := ceph.GetImage(p.context, clusterns, name, pool)
+	cmdErr, ok := err.(*exec.CommandError)
+	if ok && cmdErr.ExitStatus() == int(syscall.ENOENT) {
+		// Image with the given name doesn't exist in the given rbd pool. Returning as no need to delete the image.
+		logger.Infof("image %s does not exist anymore in pool %s", volume.Name, pool)
+		return nil
+	}
+
+	if err := ceph.DeleteImage(p.context, clusterns, name, pool); err != nil {
 		return fmt.Errorf("Failed to delete rook block image %s/%s: %v", pool, volume.Name, err)
 	}
 	logger.Infof("succeeded deleting volume %+v", volume)
