@@ -268,12 +268,6 @@ func (c *Cluster) failoverMon(name string) error {
 	m := c.newMonConfig(c.maxMonID + 1)
 	logger.Infof("starting new mon: %+v", m)
 
-	// Create the service endpoint
-	serviceIP, err := c.createService(m)
-	if err != nil {
-		return fmt.Errorf("failed to create mon service. %+v", err)
-	}
-
 	mConf := []*monConfig{m}
 
 	// Assign the pod to a node
@@ -288,6 +282,10 @@ func (c *Cluster) failoverMon(name string) error {
 		}
 		m.PublicIP = node.Address
 	} else {
+		serviceIP, err := c.createService(m)
+		if err != nil {
+			return fmt.Errorf("failed to create mon service. %+v", err)
+		}
 		m.PublicIP = serviceIP
 	}
 	c.ClusterInfo.Monitors[m.DaemonName] = cephconfig.NewMonInfo(m.DaemonName, m.PublicIP, m.Port)

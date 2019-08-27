@@ -28,24 +28,34 @@ kubectl -n rook-ceph delete deployment rook-ceph-operator
 The Ceph monmap keeps track of the mon quorum. We will update the monmap to only contain the healthy mon.
 In this example, the healthy mon is `rook-ceph-mon-b`, while the unhealthy mons are `rook-ceph-mon-a` and `rook-ceph-mon-c`.
 
-Connect to the pod of a healthy mon and run the following commands.
+Take a copy of the healthy mon deployment and patch it to run a "dummy" command.
+
+```bash
+kubectl -n rook-ceph get deployment rook-ceph-mon-b --export -o yaml > rook-ceph-mon-b-deployment.yaml
+kubectl -n rook-ceph patch deployment rook-ceph-mon-b --type=json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/command", "value": ["sleep"]},{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["3600"]}]'
+```
+
+Before continuing by connecting to the healthy mon pod, be sure to take a backup of the current mon data just in case something goes wrong.
+
+Now connect to the healthy mon pod and run the following commands.
 ```bash
 kubectl -n rook-ceph exec -it <mon-pod> bash
 
 # set a few simple variables
 cluster_namespace=rook
-good_mon_id=rook-ceph-mon-b
+good_mon_id=b
 monmap_path=/tmp/monmap
 
 # make sure the quorum lock file does not exist
 rm -f /var/lib/rook/${good_mon_id}/data/store.db/LOCK
 
 # extract the monmap to a file
-ceph-mon -i ${good_mon_id} --extract-monmap ${monmap_path} \
+ceph-mon -i ${good_mon_id} \
   --cluster=${cluster_namespace} --mon-data=/var/lib/rook/${good_mon_id}/data \
   --conf=/var/lib/rook/${good_mon_id}/${cluster_namespace}.config \
   --keyring=/var/lib/rook/${good_mon_id}/keyring \
-  --monmap=/var/lib/rook/${good_mon_id}/monmap
+  --monmap=/var/lib/rook/${good_mon_id}/monmap \
+  --extract-monmap ${monmap_path}
 
 # review the contents of the monmap
 monmaptool --print /tmp/monmap
@@ -53,15 +63,16 @@ monmaptool --print /tmp/monmap
 # remove the bad mon(s) from the monmap
 monmaptool ${monmap_path} --rm <bad_mon>
 
-# in this example we remove mon0 and mon2:
+# in this example we remove mon0 / mon a and mon2 / mon c:
 monmaptool ${monmap_path} --rm rook-ceph-mon-a
 monmaptool ${monmap_path} --rm rook-ceph-mon-c
 
 # inject the monmap into the good mon
-ceph-mon -i ${good_mon_id} --inject-monmap ${monmap_path} \
+ceph-mon -i ${good_mon_id} \
   --cluster=${cluster_namespace} --mon-data=/var/lib/rook/${good_mon_id}/data \
   --conf=/var/lib/rook/${good_mon_id}/${cluster_namespace}.config \
-  --keyring=/var/lib/rook/${good_mon_id}/keyring
+  --keyring=/var/lib/rook/${good_mon_id}/keyring \
+  --inject-monmap ${monmap_path}
 ```
 
 Exit the shell to continue.
@@ -144,7 +155,7 @@ Assuming `dataHostPathData` is `/var/lib/rook`, and the `CephCluster` trying to 
 1. Add identical `CephFilesystem` `CephBlockPool` `CephNFS` `CephObjectStore` descriptors (if any) to the new Kubernetes cluster.
 1. Install Rook Ceph in the new Kubernetes cluster.
 1. Watch the operator logs with `kubectl -n rook-ceph logs -f rook-ceph-operator-xxxxxxx`, and wait until the orchestration has settled.
-1. **STATE:** Now the cluster will have `rook-ceph-mon-a`, `rook-ceph-mgr-a`, and all the auxiliary pods up and running, and zero (hopefully) `rook-ceph-osd-ID-xxxxxx` running. `ceph -s` output should report 1 mon, 1 mgr running, and all of the OSDs down, all PGs are in `unknown` state. Rook should not start any OSD daemon since all devices belongs to the old cluster (which have a different `fsid`). 
+1. **STATE:** Now the cluster will have `rook-ceph-mon-a`, `rook-ceph-mgr-a`, and all the auxiliary pods up and running, and zero (hopefully) `rook-ceph-osd-ID-xxxxxx` running. `ceph -s` output should report 1 mon, 1 mgr running, and all of the OSDs down, all PGs are in `unknown` state. Rook should not start any OSD daemon since all devices belongs to the old cluster (which have a different `fsid`).
 1. Run `kubectl -n rook-ceph exec -it rook-ceph-mon-a-xxxxxxxx bash` to enter the `rook-ceph-mon-a` pod,
 
     ```shell
